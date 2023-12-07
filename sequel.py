@@ -19,8 +19,7 @@ class nuevoVisitor(sequelVisitor):
         self.data_frame = self.visit(self.hijos[3]) #data frame con los valores de la tabla entera, hijo 3 del select
         
         if self.hijos[1].getText() != '*': 
-            datos = self.visit(self.hijos[1]) 
-            #self.data_frame = pd.DataFrame(datos)
+            self.visit(self.hijos[1]) 
         if len(self.hijos) > 4: #tenim un order by 
             order = self.visit(self.hijos[5]) #alguna manera millor de cridar al visit del ordre??
             self.data_frame = self.data_frame.sort_values(by = order[0], ascending = order[1])
