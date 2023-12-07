@@ -9,20 +9,28 @@ select_statement
     ;
 
 column_selection
-    : ('*' | column_list)
+    : (ALL | column_list)
     ;
 
 column_list
-    : column_id (column_id)* ;
+    : column_expr (',' column_expr)* ;
 
-column_id: ID ;
-
+//2b ha de ser taula i constant o poden ser coses mes complexes?
+column_expr
+    : ID OP NUM ID #columna_nueva //em falla si fico l''as' nose pk. Crec q es per skipear la coma, no ho se potser si. 
+    | ID           #columna_existente
+    ;
+    
 table: ID ;
 
 // Lexer rules
-SELECT: 'select' ;
+SELECT: 'select' ; 
+ALL: '*';
 FROM: 'from' ;
 ID: [a-z_][a-z0-9_]* ;
-COMA: ',' -> skip;
+NUM: [+-]?([0-9]*[.])?[0-9]+;   //floats e ints. match: 43, 43.65, .87
+OP: '+' | '-' | '**' | '/';     //Problemes amb la multiplicacio, no em deixa ni que sigui '*' ni que sigui 'x', pk?
+AS: 'as' ;
 WS: [ \t\n\r]+ -> skip ;
+
 
