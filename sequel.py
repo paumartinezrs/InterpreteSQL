@@ -12,6 +12,7 @@ def operacion(operation, num):
     elif (operation == '-'): return lambda x : x - num
     elif (operation == '**'): return lambda x : x * num
     elif (operation == '/'): return lambda x : x / num
+    elif (operation == '^'): return lambda x : pow(x, num)
 
 class nuevoVisitor(sequelVisitor):
     def visitSelect_statement(self, ctx):
@@ -22,7 +23,6 @@ class nuevoVisitor(sequelVisitor):
         else:
             datos = self.visit(self.hijos[1]) 
             st.write(pd.DataFrame(datos))
-            
 
     def visitColumn_selection(self, ctx):
         [lista] = list(ctx.getChildren())
@@ -43,10 +43,11 @@ class nuevoVisitor(sequelVisitor):
         self.datos[nombre_columna] = valores_columna
 
     def visitColumna_nueva(self, ctx):
-        [columna1, operation, numero, columna2] = list(ctx.getChildren())
+        [columna1, operation, numero, a, columna2] = list(ctx.getChildren())
         columna1 = columna1.getText()
         operation = operation.getText()
         numero = float(numero.getText())
+        a = a.getText()
         columna2 = columna2.getText()
         self.datos[columna2] = list(map(operacion(operation, numero), list(self.data_frame[columna1])))
 
