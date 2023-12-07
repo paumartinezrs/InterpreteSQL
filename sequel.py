@@ -5,7 +5,6 @@ from sequelVisitor import sequelVisitor
 
 import streamlit as st
 import pandas as pd
-import operator as op
 
 def operacion(operation, num):
     if (operation == '+'): return lambda x : x + num 
@@ -17,39 +16,60 @@ def operacion(operation, num):
 class nuevoVisitor(sequelVisitor):
     def visitSelect_statement(self, ctx):
         self.hijos = list(ctx.getChildren())
-        self.data_frame = self.visit(self.hijos[len(self.hijos) - 1]) #data frame con los valores de la tabla entera
-        if self.hijos[1].getText() == '*': 
-            st.write(self.data_frame)
-        else:
+        self.data_frame = self.visit(self.hijos[3]) #data frame con los valores de la tabla entera, hijo 3 del select
+        
+        if self.hijos[1].getText() != '*': 
             datos = self.visit(self.hijos[1]) 
-            st.write(pd.DataFrame(datos))
+            #self.data_frame = pd.DataFrame(datos)
+        if len(self.hijos) > 4: #tenim un order by 
+            order = self.visit(self.hijos[5]) #alguna manera millor de cridar al visit del ordre??
+            self.data_frame = self.data_frame.sort_values(by = order[0], ascending = order[1])
 
+        st.write(self.data_frame)           
+        
     def visitColumn_selection(self, ctx):
-        [lista] = list(ctx.getChildren())
+        [lista] = list(ctx.getChildren()) #pq [lista] i no lista??
         return self.visit(lista)
         
     def visitColumn_list(self, ctx):
         columnas = list(ctx.getChildren())
-        self.datos = {} #devuelvo un diccionario con las columnas necesarias. la llave sera el nombre
-        #problema      #m'agradaria passar datos com a valor com a parametre, pq no em deixa???
-        for c in columnas:
-            self.visit(c) #añade al diccionario los valores de la columna c. (puede ser una columna existente o una columna nueva)
-        return self.datos
-        
-    def visitColumna_existente(self, ctx):
+        self.visualizar_columnas = [] #columnas que se quedan en el data_frame
+        for i in columnas:
+            self.visit(i)
+        self.data_frame = self.data_frame.filter(items = self.visualizar_columnas)
+
+    def visitColumna_existente(self, ctx): 
         [nombre_columna] = list(ctx.getChildren())
         nombre_columna = nombre_columna.getText()
-        valores_columna = self.data_frame[nombre_columna]
-        self.datos[nombre_columna] = valores_columna
+        self.visualizar_columnas.append(nombre_columna)
 
     def visitColumna_nueva(self, ctx):
-        [columna1, operation, numero, a, columna2] = list(ctx.getChildren())
+        [columna1, operation, numero, _, columna2] = list(ctx.getChildren())
         columna1 = columna1.getText()
         operation = operation.getText()
         numero = float(numero.getText())
-        a = a.getText()
         columna2 = columna2.getText()
-        self.datos[columna2] = list(map(operacion(operation, numero), list(self.data_frame[columna1])))
+        self.data_frame[columna2] = list(map(operacion(operation, numero), list(self.data_frame[columna1])))
+        self.visualizar_columnas.append(columna2)
+
+    def visitColumns_order(self, ctx): #devuelve una lista segun el orden que se ordenaran las filas del dataset
+        l = list(ctx.getChildren()) #tienen que ser columnas existentes
+        res = ([],[])
+        for i in range(len(l)): 
+            if (l[i].getText() != ','):
+                order = self.visit(l[i])
+                res[0].append(order[0])
+                res[1].append(order[1])
+        return res
+        
+    def visitCol_order(self, ctx):
+        l = list(ctx.getChildren())
+        if len(l) == 1: 
+            return (l[0].getText(), True) #Columna por la que ordenar, true si es ascendente, false en caso contrario
+        else:
+            columna = l[0].getText()
+            asc = l[1].getText().lower() == "asc"
+            return (columna, asc)
 
     def visitTable(self, ctx:sequelParser.TableContext):
         self.tabla = ctx.getText()
