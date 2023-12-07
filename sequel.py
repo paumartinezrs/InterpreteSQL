@@ -6,25 +6,40 @@ from sequelVisitor import sequelVisitor
 import streamlit as st
 import pandas as pd
 
-#Devuelve un maybe dataFrame, si la tabla existe
-def existe_tabla(tabla): 
-    try:
-        #,index_col=0 
-        df = pd.read_csv(f"./data/{tabla}.csv")
-        return (True, df)
-    except:
-        # Fallo al abrir el fichero
-        return (False, 0)
-
 class nuevoVisitor(sequelVisitor):
-    def visitTable(self, ctx:sequelParser.TableContext):
-        tabla = ctx.getText()
-        (res, data_frame) = existe_tabla(tabla)
-        if not res:
-            st.write(f"No existe la tabla {tabla}.")
+    def visitSelect_statement(self, ctx):
+        self.hijos = list(ctx.getChildren())
+        self.data_frame = self.visit(self.hijos[len(self.hijos) - 1])
+        if self.hijos[1].getText() == '*': 
+            st.write(self.data_frame)
         else:
-            st.write(data_frame)
-        return self.visitChildren(ctx)
+            try:
+                lista_columnas = self.visit(self.hijos[1])
+                st.write(self.data_frame[lista_columnas])
+            except:
+                st.write("Error: columna/s incorrecta/s")
+            
+
+    def visitColumn_selection(self, ctx):
+        [lista] = list(ctx.getChildren())
+        return self.visit(lista)
+        
+    def visitColumn_list(self, ctx):
+        l = list(ctx.getChildren())
+        lista_columnas = []
+        for i in l:
+            lista_columnas.append(i.getText())
+        return lista_columnas
+        
+    def visitTable(self, ctx:sequelParser.TableContext):
+        self.tabla = ctx.getText()
+        try:
+            self.data_frame = pd.read_csv(f"./data/{self.tabla}.csv")
+            return self.data_frame
+        except:
+            # Fallo al abrir el fichero
+            st.write(f"Error: la tabla '{self.tabla}' es incorrecta")
+            return -1
 
 st.text_input("Consulta:", key="query")
 input_stream = InputStream(st.session_state.query)
