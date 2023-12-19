@@ -16,65 +16,129 @@ def operacion(operation, num):
 class nuevoVisitor(sequelVisitor):
     def visitSelect_statement(self, ctx):
         self.hijos = list(ctx.getChildren())
-        self.data_frame = self.visit(self.hijos[3]) #data frame con los valores de la tabla entera, hijo 3 del select
         
-        if self.hijos[1].getText() != '*': 
-            self.visit(self.hijos[1]) 
-        if len(self.hijos) > 4: #tenim un order by 
-            order = self.visit(self.hijos[5]) #alguna manera millor de cridar al visit del ordre??
-            self.data_frame = self.data_frame.sort_values(by = order[0], ascending = order[1])
+        self.visit(self.hijos[3]) #visitem Table
+        self.visit(self.hijos[1]) #visitem column selection
 
-        st.write(self.data_frame)           
-        
-    def visitColumn_selection(self, ctx):
-        [lista] = list(ctx.getChildren()) #pq [lista] i no lista??
+        for i in range(4, len(self.hijos)):
+            self.visit(self.hijos[i]) #order_by
+            
+        st.write(self.data_frame)
+
+    
+
+    #no cal separar all columns i some columns de moment
+    def visitSome_columns(self, ctx): 
+        [lista] = list(ctx.getChildren())
         return self.visit(lista)
-        
+    
+
+
+
+
     def visitColumn_list(self, ctx):
         columnas = list(ctx.getChildren())
-        self.visualizar_columnas = [] #columnas que se quedan en el data_frame
+        visualizar_columnas = [] #columnas que se quedan en el data_frame
         for i in columnas:
-            self.visit(i)
-        self.data_frame = self.data_frame.filter(items = self.visualizar_columnas)
-
-    def visitColumna_existente(self, ctx): 
-        [nombre_columna] = list(ctx.getChildren())
-        nombre_columna = nombre_columna.getText()
-        self.visualizar_columnas.append(nombre_columna)
+            if i.getText() != ',': visualizar_columnas.append(self.visit(i))
+        
+        self.data_frame = self.data_frame.filter(items = visualizar_columnas)
 
     def visitColumna_nueva(self, ctx):
-        [columna1, operation, numero, _, columna2] = list(ctx.getChildren())
-        columna1 = columna1.getText()
-        operation = operation.getText()
-        numero = float(numero.getText())
-        columna2 = columna2.getText()
-        self.data_frame[columna2] = list(map(operacion(operation, numero), list(self.data_frame[columna1])))
-        self.visualizar_columnas.append(columna2)
+        [expresion, _, nueva] = list(ctx.getChildren())
+        expresion = self.visit(expresion)
+        nueva = self.visit(nueva)
+        self.data_frame[nueva] = expresion
+        return nueva
+   
+    def visitColumna_existente(self, ctx):
+        [nombre_columna] = list(ctx.getChildren())
+        nombre_columna = self.visit(nombre_columna)
+        return nombre_columna
+    
+    def visitParentesis(self, ctx):
+        [_, exprs, _] = list(ctx.getChildren())
+        return self.visit(exprs)
+    
+    def visitPotencia(self, ctx):
+        [primera, op, segona] = list(ctx.getChildren())
+        op = op.getText()
+        primera = self.visit(primera)
+        segona = self.visit(segona)
+        return pow(primera, segona)
+    
+    def visitMult_div(self, ctx):
+        [primera, op, segona] = list(ctx.getChildren())
+        op = op.getText()
+        primera = self.visit(primera)
+        segona = self.visit(segona)
+        if op == '*': return primera*segona
+        else: return primera/segona
+
+    def visitSum_rest(self, ctx):
+        [primera, op, segona] = list(ctx.getChildren())
+        op = op.getText()
+        primera = self.visit(primera)
+        segona = self.visit(segona)
+        if op == '+': return primera + segona
+        else: return primera - segona
+
+    def visitId_columna(self, ctx):
+        [col] = list(ctx.getChildren())
+        col = col.getText()
+        return self.data_frame[col]
+    
+    def visitNum(self, ctx):
+        [num] = list(ctx.getChildren())
+        return float(num.getText())
+
+    
+
+   
+
+
+
+
 
     def visitColumns_order(self, ctx): #devuelve una lista segun el orden que se ordenaran las filas del dataset
-        l = list(ctx.getChildren()) #tienen que ser columnas existentes
-        res = ([],[])
-        for i in range(len(l)): 
-            if (l[i].getText() != ','):
-                order = self.visit(l[i])
-                res[0].append(order[0])
-                res[1].append(order[1])
-        return res
+        l = list(ctx.getChildren()) #deberiamos comprovar que sean columnas existentes
+        order = ([],[])
+        for i in l: 
+            if i.getText() != ',' :
+                columna = self.visit(i)    
+                order[0].append(columna[0])
+                order[1].append(columna[1])
         
-    def visitCol_order(self, ctx):
+        self.data_frame = self.data_frame.sort_values(by = order[0], ascending = order[1])
+        #st.write(self.data_frame)
+        
+    def visitCol_order_asc(self, ctx):
         l = list(ctx.getChildren())
-        if len(l) == 1: 
-            return (l[0].getText(), True) #Columna por la que ordenar, true si es ascendente, false en caso contrario
-        else:
-            columna = l[0].getText()
-            asc = l[1].getText().lower() == "asc"
-            return (columna, asc)
+        columna = self.visit(l[0])
+        ascendente = True
+        return (columna, ascendente)
 
-    def visitTable(self, ctx:sequelParser.TableContext):
+    def visitCol_order_especificado(self, ctx):
+        l = list(ctx.getChildren())
+        columna = self.visit(l[0])
+        ascendente = l[1].getText().lower() == "asc"
+        return (columna, ascendente) #true si es en orden ascendente, false en caso contrario  
+
+    def visitCondition(self, ctx):
+        [columna, comparador, num] = list(ctx.getChildren())
+        columna = self.visit(columna)
+        comparador = comparador.getText()
+        num = float(num.getText())
+        self.data_frame.filter
+
+    def visitColumn(self, ctx):
+        [identificador] = list(ctx.getChildren())
+        return identificador.getText()
+
+    def visitTable(self, ctx):
         self.tabla = ctx.getText()
         try:
             self.data_frame = pd.read_csv(f"./data/{self.tabla}.csv")
-            return self.data_frame
         except:
             st.write(f"Error: la tabla '{self.tabla}' es incorrecta") # Fallo al abrir el fichero
             return -1

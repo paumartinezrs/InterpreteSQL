@@ -9,23 +9,40 @@ select_statement
     ;
 
 column_selection
-    : (ALL | column_list)
+    : '*'           #all_columns
+    | column_list   #some_columns
     ;
 
 column_list
-    : column_expr (',' column_expr)*  //Esta be aquesta coma o seria millor ficar una lexer rule?
+    : column_id (',' column_id)*  //perque aqui sense coma salta error, pero en columns_order sense coma no?
+    ;
+
+column_id
+    : column_expr AS column #columna_nueva
+    | column                #columna_existente
     ;
 
 column_expr
-    : ID OP NUM AS ID #columna_nueva 
-    | ID              #columna_existente
+    : '('column_expr')'                         #parentesis
+    | <assoc=right> column_expr '^' column_expr #potencia
+    | column_expr ('*' | '/') column_expr       #mult_div
+    | column_expr ('+' | '-') column_expr       #sum_rest
+    | column                                    #id_columna
+    | NUM                                       #num
     ;
 
 columns_order
-    : col_order (',' col_order)*; 
+    : col_order (',' col_order)*; // perque no salta error si tinc em deixo la coma?
 
 col_order
-    : ID (ASC | DESC)? ;
+    : column ('asc' | 'desc') #col_order_especificado
+    | column                  #col_order_asc
+    ;
+
+condition
+    : column COMPARE NUM;
+
+column: ID;
     
 table: ID ;
 
@@ -37,9 +54,17 @@ AS: 'as' ;
 ORDER: 'order by' ;
 ASC: 'asc' ;
 DESC: 'desc' ;
+WHERE: 'where' ;
+COMA : ',' ;
 ID: [a-z_][a-z0-9_]* ;
 NUM: [+-]?([0-9]*[.])?[0-9]+;      //floats e ints. matches: 43, 43.65, .87
-OP: '+' | '-' | '**' | '/' | '^';  //Problemes amb la multiplicacio, no em deixa ni que sigui '*' ni que sigui 'x', pk?
+OP_NUM: '+' | '-' | '*' | '/' | '^';  //Problemes amb la multiplicacio, no em deixa ni que sigui '*' ni que sigui 'x', pk?
+//LOGIC_BIN: 'and' | 'or' ;
+//LOGIC_
+COMPARE: '=' ;
 WS: [ \t\n\r]+ -> skip ;
+
+
+//Si faig un append en una llista amb ',', hi ha alguna manera millor de ignorarles que if != ','
 
 
