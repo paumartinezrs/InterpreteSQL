@@ -6,6 +6,9 @@ from sequelVisitor import sequelVisitor
 import streamlit as st
 import pandas as pd
 
+#per executar amb streamlit posarho a True
+web = False
+
 def operacion(operation, num):
     if (operation == '+'): return lambda x : x + num 
     elif (operation == '-'): return lambda x : x - num
@@ -14,6 +17,10 @@ def operacion(operation, num):
     elif (operation == '^'): return lambda x : pow(x, num)
 
 class nuevoVisitor(sequelVisitor):
+    def visitRoot(self, ctx):
+        [statement] = list(ctx.getChildren())
+        return self.visit(statement)
+    
     def visitSelect_statement(self, ctx):
         self.hijos = list(ctx.getChildren())
         
@@ -23,7 +30,7 @@ class nuevoVisitor(sequelVisitor):
         for i in range(4, len(self.hijos)):
             self.visit(self.hijos[i]) #order_by
             
-        st.write(self.data_frame)
+        return self.data_frame
 
     
 
@@ -41,8 +48,7 @@ class nuevoVisitor(sequelVisitor):
         visualizar_columnas = [] #columnas que se quedan en el data_frame
         for i in columnas:
             if i.getText() != ',': visualizar_columnas.append(self.visit(i))
-        
-        self.data_frame = self.data_frame.filter(items = visualizar_columnas)
+        self.data_frame = self.data_frame[visualizar_columnas]
 
     def visitColumna_nueva(self, ctx):
         [expresion, _, nueva] = list(ctx.getChildren())
@@ -112,7 +118,7 @@ class nuevoVisitor(sequelVisitor):
         self.data_frame = self.data_frame.sort_values(by = order[0], ascending = order[1])
         #st.write(self.data_frame)
         
-    def visitCol_order_asc(self, ctx):
+    def visitCol_order_asc(self, ctx): #comprovar si existe
         l = list(ctx.getChildren())
         columna = self.visit(l[0])
         ascendente = True
@@ -131,7 +137,7 @@ class nuevoVisitor(sequelVisitor):
         num = float(num.getText())
         self.data_frame.filter
 
-    def visitColumn(self, ctx):
+    def visitColumn(self, ctx): #provar si existe
         [identificador] = list(ctx.getChildren())
         return identificador.getText()
 
@@ -143,16 +149,40 @@ class nuevoVisitor(sequelVisitor):
             st.write(f"Error: la tabla '{self.tabla}' es incorrecta") # Fallo al abrir el fichero
             return -1
 
-st.text_input("Consulta:", key="query")
-input_stream = InputStream(st.session_state.query)
-lexer = sequelLexer(input_stream)
-token_stream = CommonTokenStream(lexer)
-parser = sequelParser(token_stream)
-tree = parser.root()
 
-if parser.getNumberOfSyntaxErrors() == 0:
-    visitor = nuevoVisitor()
-    visitor.visit(tree)
-else:
-    print(parser.getNumberOfSyntaxErrors(), 'errors de sintaxi.')
-    print(tree.toStringTree(recog=parser))
+def ejecuta(input_stream): 
+    input_stream = InputStream(input_stream)
+    lexer = sequelLexer(input_stream)   
+    token_stream = CommonTokenStream(lexer)
+    parser = sequelParser(token_stream)
+    tree = parser.root()
+
+    if parser.getNumberOfSyntaxErrors() == 0:
+        visitor = nuevoVisitor()
+        res = visitor.visit(tree)
+        if (web): st.write(res)
+        else: print(res)
+        return res
+    else:
+        print(parser.getNumberOfSyntaxErrors(), 'errors de sintaxi.')
+        print(tree.toStringTree(recog=parser))
+        return -1
+
+def main():
+    input_stream = ""
+    if (web):
+        st.text_input("Consulta:", key="query")
+        input_stream = st.session_state.query
+    else: 
+        input_stream = input('Consulta: ')
+    ejecuta(input_stream)
+
+#descomenta main para funcionamiento normal
+#main()
+
+#prueba
+#ejecuta("select * from countries order by region_id, country_name desc")
+
+
+
+
