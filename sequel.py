@@ -28,7 +28,7 @@ class nuevoVisitor(sequelVisitor):
         self.visit(self.hijos[1]) #visitem column selection
 
         for i in range(4, len(self.hijos)):
-            self.visit(self.hijos[i]) #order_by
+            self.visit(self.hijos[i]) 
             
         return self.data_frame
 
@@ -130,12 +130,59 @@ class nuevoVisitor(sequelVisitor):
         ascendente = l[1].getText().lower() == "asc"
         return (columna, ascendente) #true si es en orden ascendente, false en caso contrario  
 
+
+
+
+    def visitClausula_where(self, ctx):
+        [condition] = list(ctx.getChildren())
+        condition = self.visit(condition)
+        self.data_frame = self.data_frame[condition]
+
+    
+    def visitNot(self, ctx):
+        [_, condition] = list(ctx.getChildren())
+        return ~self.visit(condition) 
+        
+    def visitAnd(self, ctx):
+        [condition1, _, condition2] = list(ctx.getChildren())
+        condition1 = self.visit(condition1) 
+        condition2 = self.visit(condition2)
+        return condition1 & condition2
+
+    def visitOr(self, ctx):
+        [condition1, _, condition2] = list(ctx.getChildren())
+        condition1 = self.visit(condition1) 
+        condition2 = self.visit(condition2)
+        return condition1 | condition2
+
+    def visitSingle(self, ctx):
+        [condition1] = list(ctx.getChildren())
+        return self.visit(condition1) 
+         
     def visitCondition(self, ctx):
-        [columna, comparador, num] = list(ctx.getChildren())
+        [columna, op, column_expresion] = list(ctx.getChildren())
         columna = self.visit(columna)
-        comparador = comparador.getText()
-        num = float(num.getText())
-        self.data_frame.filter
+
+        print(type(columna))
+        print(columna)
+
+        op = op.getText()
+        column_expresion = self.visit(column_expresion)
+        cumplen = -1
+        if (op == "="):
+            #cumplen = columna.eval(" == " + str(column_expresion))
+            cumplen = self.data_frame.eval(columna + " == " + str(column_expresion))
+        elif (op == "<"):
+            cumplen = self.data_frame.eval(columna + " < " + str(column_expresion))
+        elif (op == ">"):
+            cumplen = self.data_frame.eval(columna + " > " + str(column_expresion))
+        elif (op == "<>"):
+            cumplen = self.data_frame.eval(columna + " != " + str(column_expresion))
+        elif (op == "<="):
+            cumplen = self.data_frame.eval(columna + " <= " + str(column_expresion))
+        elif (op == ">="):
+            cumplen = self.data_frame.eval(columna + " >= " + str(column_expresion))
+        return cumplen
 
     def visitColumn(self, ctx): #provar si existe
         [identificador] = list(ctx.getChildren())
@@ -178,9 +225,9 @@ def main():
     ejecuta(input_stream)
 
 #descomenta main para funcionamiento normal
-#main()
+#while (True): main()
 
-#prueba
+#sentencia para usar en una prueba
 #ejecuta("select * from countries order by region_id, country_name desc")
 
 

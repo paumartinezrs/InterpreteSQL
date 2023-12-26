@@ -1,11 +1,13 @@
 grammar sequel;
 
+//Falten trys excepts
+
 options {caseInsensitive = true;}
 
 root: select_statement ;
 
 select_statement
-    : SELECT column_selection FROM table (ORDER columns_order)?
+    : SELECT column_selection FROM table (WHERE clausula_where)? (ORDER columns_order)? 
     ;
 
 column_selection
@@ -14,7 +16,7 @@ column_selection
     ;
 
 column_list
-    : column_id (',' column_id)*  //perque aqui sense coma salta error, pero en columns_order sense coma no?
+    : column_id (',' column_id)* 
     ;
 
 column_id
@@ -39,8 +41,22 @@ col_order
     | column                  #col_order_asc
     ;
 
+//fer un per sobre de op_logic per poder aplicar el resultat final
+
+clausula_where
+    : op_logic
+    ;
+
+op_logic
+    : 'not' op_logic            #not 
+    | op_logic 'and' op_logic   #and
+    | op_logic 'or' op_logic    #or  
+    | condition                 #single
+    ;
+
 condition
-    : column COMPARE NUM;
+    : column ('=' | '<' | '>' | '<=' | '>=' | '<>') column_expr
+    ; 
 
 column: ID;
     
@@ -48,23 +64,12 @@ table: ID ;
 
 // Lexer rules
 SELECT: 'select' ; 
-ALL: '*';
 FROM: 'from' ;
 AS: 'as' ;
 ORDER: 'order by' ;
-ASC: 'asc' ;
-DESC: 'desc' ;
 WHERE: 'where' ;
-COMA : ',' ;
 ID: [a-z_][a-z0-9_]* ;
 NUM: [+-]?([0-9]*[.])?[0-9]+;      //floats e ints. matches: 43, 43.65, .87
-OP_NUM: '+' | '-' | '*' | '/' | '^';  //Problemes amb la multiplicacio, no em deixa ni que sigui '*' ni que sigui 'x', pk?
-//LOGIC_BIN: 'and' | 'or' ;
-//LOGIC_
-COMPARE: '=' ;
 WS: [ \t\n\r]+ -> skip ;
-
-
-//Si faig un append en una llista amb ',', hi ha alguna manera millor de ignorarles que if != ','
 
 

@@ -32,4 +32,9 @@ def test_order_by():
     expected = expected.sort_values(by = ["region_id", "country_name"], ascending = [True, False])
     assert expected.equals(sequel.ejecuta("select * from countries order by region_id, country_name desc"))
 
+def test_where():
+    expected = pd.read_csv(f"./data/countries.csv")
+    expected = expected[(expected["region_id"] != 1) & (expected["region_id"]!= 3)]
+    assert expected.equals(sequel.ejecuta("select * from countries where not region_id = 1 and not region_id = 3"))
+
 
