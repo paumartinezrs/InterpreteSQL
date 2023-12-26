@@ -55,7 +55,7 @@ op_logic
     ;
 
 condition
-    : column ('=' | '<' | '>' | '<=' | '>=' | '<>') column_expr
+    : column_expr ('=' | '<' | '>' | '<=' | '>=' | '<>') column_expr
     ; 
 
 column: ID;

@@ -160,28 +160,61 @@ class nuevoVisitor(sequelVisitor):
         return self.visit(condition1) 
          
     def visitCondition(self, ctx):
-        [columna, op, column_expresion] = list(ctx.getChildren())
-        columna = self.visit(columna)
-
-        print(type(columna))
-        print(columna)
+        [expr1, op, expr2] = list(ctx.getChildren())
+        expr1 = self.visit(expr1)
 
         op = op.getText()
-        column_expresion = self.visit(column_expresion)
+        expr2 = self.visit(expr2)
+
         cumplen = -1
         if (op == "="):
-            #cumplen = columna.eval(" == " + str(column_expresion))
-            cumplen = self.data_frame.eval(columna + " == " + str(column_expresion))
+            if isinstance(expr2, float): #expr2 es un numero, aplicamos un map
+                condicion = lambda x: x == expr2
+                cumplen = expr1.apply(condicion)
+            else:  #expr2 es una columna, aplicamos un zip with
+                cumplen = []
+                for x, y in zip(expr1, expr2):
+                    cumplen.append(x == y)
         elif (op == "<"):
-            cumplen = self.data_frame.eval(columna + " < " + str(column_expresion))
+            if isinstance(expr2, float): 
+                condicion = lambda x: x < expr2
+                cumplen = expr1.apply(condicion)
+            else: 
+                cumplen = []
+                for x, y in zip(expr1, expr2):
+                    cumplen.append(x < y)
         elif (op == ">"):
-            cumplen = self.data_frame.eval(columna + " > " + str(column_expresion))
+            if isinstance(expr2, float):
+                condicion = lambda x: x > expr2
+                cumplen = expr1.apply(condicion)
+            else:  
+                cumplen = []
+                for x, y in zip(expr1, expr2):
+                    cumplen.append(x > y)
         elif (op == "<>"):
-            cumplen = self.data_frame.eval(columna + " != " + str(column_expresion))
+            if isinstance(expr2, float):
+                condicion = lambda x: x != expr2
+                cumplen = expr1.apply(condicion)
+            else:  
+                cumplen = []
+                for x, y in zip(expr1, expr2):
+                    cumplen.append(x != y)
         elif (op == "<="):
-            cumplen = self.data_frame.eval(columna + " <= " + str(column_expresion))
+            if isinstance(expr2, float): 
+                condicion = lambda x: x <= expr2
+                cumplen = expr1.apply(condicion)
+            else:  
+                cumplen = []
+                for x, y in zip(expr1, expr2):
+                    cumplen.append(x <= y)
         elif (op == ">="):
-            cumplen = self.data_frame.eval(columna + " >= " + str(column_expresion))
+            if isinstance(expr2, float): 
+                condicion = lambda x: x >= expr2
+                cumplen = expr1.apply(condicion)
+            else: 
+                cumplen = []
+                for x, y in zip(expr1, expr2):
+                    cumplen.append(x >= y)
         return cumplen
 
     def visitColumn(self, ctx): #provar si existe
