@@ -10,10 +10,26 @@ import pandas as pd
 web = False
 
 class nuevoVisitor(sequelVisitor):
-    def visitRoot(self, ctx):
-        [statement] = list(ctx.getChildren())
-        return self.visit(statement)
+    def __init__(self):
+        self.map = {}
     
+    def visitSimbol_declare(self, ctx):
+        [identificador, _, consulta, _] = list(ctx.getChildren())
+        identificador = self.visit(identificador)
+        consulta = self.visit(consulta)
+        self.map[identificador] = consulta
+        print(identificador) #va raro. identificador no se que li pasa que no es l'string que ha de ser
+        print("declarado")
+        
+
+    def visitSimbol_consult(self, ctx):
+        [identificador, _] = list(ctx.getChildren())
+        identificador = self.visit(identificador)
+        print(identificador)
+        print("consultado")
+        print(self.map[identificador])
+        
+
     def visitSelect_statement(self, ctx):
         self.hijos = list(ctx.getChildren())
         
@@ -220,7 +236,8 @@ class nuevoVisitor(sequelVisitor):
 
     def visitColumn(self, ctx): #provar si existe
         [identificador] = list(ctx.getChildren())
-        return identificador.getText()
+        return self.visit(identificador)
+    
 
     def visitTable(self, ctx):
         self.tabla = ctx.getText()
@@ -229,10 +246,13 @@ class nuevoVisitor(sequelVisitor):
         except:
             st.write(f"Error: la tabla '{self.tabla}' es incorrecta") # Fallo al abrir el fichero
             return -1
+        
+    def visitID(self, ctx):
+        [identificador] = list(ctx.getChildren())
+        return identificador.getText()
 
 
 def ejecuta(input_stream): 
-    input_stream = InputStream(input_stream)
     lexer = sequelLexer(input_stream)   
     token_stream = CommonTokenStream(lexer)
     parser = sequelParser(token_stream)
@@ -255,11 +275,12 @@ def main():
         st.text_input("Consulta:", key="query")
         input_stream = st.session_state.query
     else: 
-        input_stream = input('Consulta: ') #canviar aixo pq pugin haber salts de linea
+        input_stream = StdinStream()
     ejecuta(input_stream)
 
 #descomenta main para funcionamiento normal
-#while (True): main()
+#while (True): 
+main()
 
 #sentencia para usar en una prueba
 #ejecuta("select * from countries order by region_id, country_name desc")

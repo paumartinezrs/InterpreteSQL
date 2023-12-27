@@ -1,10 +1,21 @@
 grammar sequel;
 
 //Falten trys excepts
+//Falta streamlit
+//S'ha de poder fer mes gran l'entrada
 
 options {caseInsensitive = true;}
 
-root: select_statement ;
+root: (simbol_declare | simbol_consult)+ ;
+//select_statement | 
+
+simbol_declare
+    : ID ':=' select_statement ';'
+    ;
+
+simbol_consult
+    : ID ';'
+    ;
 
 select_statement
     : SELECT column_selection FROM table inner_clause* (WHERE clausula_where)? (ORDER columns_order)? 
