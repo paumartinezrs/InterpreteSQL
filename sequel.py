@@ -9,13 +9,6 @@ import pandas as pd
 #per executar amb streamlit posarho a True
 web = False
 
-def operacion(operation, num):
-    if (operation == '+'): return lambda x : x + num 
-    elif (operation == '-'): return lambda x : x - num
-    elif (operation == '**'): return lambda x : x * num
-    elif (operation == '/'): return lambda x : x / num
-    elif (operation == '^'): return lambda x : pow(x, num)
-
 class nuevoVisitor(sequelVisitor):
     def visitRoot(self, ctx):
         [statement] = list(ctx.getChildren())
@@ -24,12 +17,15 @@ class nuevoVisitor(sequelVisitor):
     def visitSelect_statement(self, ctx):
         self.hijos = list(ctx.getChildren())
         
-        self.visit(self.hijos[3]) #visitem Table
-        self.visit(self.hijos[1]) #visitem column selection
+        self.data_frame = self.visit(self.hijos[3]) #visitem Table
+        
 
         for i in range(4, len(self.hijos)):
             self.visit(self.hijos[i]) 
-            
+        
+
+        self.visit(self.hijos[1]) #visitem column selection
+
         return self.data_frame
 
     
@@ -40,7 +36,12 @@ class nuevoVisitor(sequelVisitor):
         return self.visit(lista)
     
 
-
+    def visitInner_clause(self, ctx): 
+        [_, tabla, _, columna1, _, columna2] = list(ctx.getChildren())
+        tabla = self.visit(tabla)
+        columna1 = self.visit(columna1)
+        columna2 = self.visit(columna2)
+        self.data_frame =  self.data_frame.merge(tabla, left_on = columna1, right_on = columna2)
 
 
     def visitColumn_list(self, ctx):
@@ -224,7 +225,7 @@ class nuevoVisitor(sequelVisitor):
     def visitTable(self, ctx):
         self.tabla = ctx.getText()
         try:
-            self.data_frame = pd.read_csv(f"./data/{self.tabla}.csv")
+            return pd.read_csv(f"./data/{self.tabla}.csv")
         except:
             st.write(f"Error: la tabla '{self.tabla}' es incorrecta") # Fallo al abrir el fichero
             return -1
@@ -254,7 +255,7 @@ def main():
         st.text_input("Consulta:", key="query")
         input_stream = st.session_state.query
     else: 
-        input_stream = input('Consulta: ')
+        input_stream = input('Consulta: ') #canviar aixo pq pugin haber salts de linea
     ejecuta(input_stream)
 
 #descomenta main para funcionamiento normal

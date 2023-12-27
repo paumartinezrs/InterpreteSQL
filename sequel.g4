@@ -7,7 +7,11 @@ options {caseInsensitive = true;}
 root: select_statement ;
 
 select_statement
-    : SELECT column_selection FROM table (WHERE clausula_where)? (ORDER columns_order)? 
+    : SELECT column_selection FROM table inner_clause* (WHERE clausula_where)? (ORDER columns_order)? 
+    ;
+
+inner_clause
+    : INNER table ON column '=' column
     ;
 
 column_selection
@@ -66,8 +70,10 @@ table: ID ;
 SELECT: 'select' ; 
 FROM: 'from' ;
 AS: 'as' ;
-ORDER: 'order by' ;
+INNER: 'inner join ';
+ON: 'ON';
 WHERE: 'where' ;
+ORDER: 'order by' ;
 ID: [a-z_][a-z0-9_]* ;
 NUM: [+-]?([0-9]*[.])?[0-9]+;      //floats e ints. matches: 43, 43.65, .87
 WS: [ \t\n\r]+ -> skip ;

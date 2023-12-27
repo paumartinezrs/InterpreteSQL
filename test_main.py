@@ -37,11 +37,12 @@ def test_where():
     expected = expected[(expected["region_id"] != 1) & (expected["region_id"]!= 3)]
     assert expected.equals(sequel.ejecuta("select * from countries where not region_id = 1 and not region_id = 3"))
 
-"""def test_where_avanzado():
-    expected = pd.read_csv(f"./data/jobs.csv")
-    expected = expected[(expected["min_salary"] > expected["min_salary"]/2)] #no esta be aixo
-    print(expected)
-    assert expected.equals(sequel.ejecuta("select * from jobs where min_salary > max_salary/2"))
-    assert expected.equals(sequel.ejecuta("select * from jobs where min_salary*2 > max_salary"))"""
+def test_inner_join():
+    employees = pd.read_csv(f"./data/employees.csv")
+    departments = pd.read_csv(f"./data/departments.csv")
+
+    res = employees.merge(departments, on = "department_id")
+    res = res[["first_name", "department_name"]]
+    assert res.equals(sequel.ejecuta("select first_name, department_name from employees inner join departments on department_id = department_id"))
 
 
