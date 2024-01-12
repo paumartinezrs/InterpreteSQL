@@ -5,31 +5,48 @@ from sequelVisitor import sequelVisitor
 
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 #per executar amb streamlit posarho a True
-web = False
+web = True
 
-class nuevoVisitor(sequelVisitor):
+class myVisitor(sequelVisitor):
     def __init__(self):
         self.map = {}
+        
+    def compruebaColumna(self, columna):
+        if columna not in self.data_frame: st.write(f"Error: la columna '{columna}' es incorrecta!") 
+
+    def visitIn(self, ctx):
+        #column 'in' '(' select_statement ')'
+        [columna, _, _, select, _] = list(ctx.getChildren())
+        columna = columna.getText()
+        select = self.visit(select)
+        self.data_frame = self.data_frame[columna].isin(select)
+
+    
+
+        #print(identificador) #va raro. identificador no se que li pasa que no es l'string que ha de ser
+        #print("declarado")
     
     def visitSimbol_declare(self, ctx):
         [identificador, _, consulta, _] = list(ctx.getChildren())
-        identificador = self.visit(identificador)
+        identificador = identificador.getText()
         consulta = self.visit(consulta)
-        self.map[identificador] = consulta
-        print(identificador) #va raro. identificador no se que li pasa que no es l'string que ha de ser
-        print("declarado")
+        #self.map[identificador] = consulta
+        st.session_state[identificador] = consulta
+        #print(identificador) #va raro. identificador no se que li pasa que no es l'string que ha de ser
+        #print("declarado")
         
-
     def visitSimbol_consult(self, ctx):
         [identificador, _] = list(ctx.getChildren())
-        identificador = self.visit(identificador)
-        print(identificador)
-        print("consultado")
-        print(self.map[identificador])
-        
-
+        identificador = identificador.getText()
+        #print(identificador)
+        #print("consultado")
+        #print(self.map[identificador]) 
+        return st.session_state[identificador]
+        #return self.map[identificador] 
+    
     def visitSelect_statement(self, ctx):
         self.hijos = list(ctx.getChildren())
         
@@ -57,15 +74,19 @@ class nuevoVisitor(sequelVisitor):
         tabla = self.visit(tabla)
         columna1 = self.visit(columna1)
         columna2 = self.visit(columna2)
-        self.data_frame =  self.data_frame.merge(tabla, left_on = columna1, right_on = columna2)
+        self.compruebaColumna(columna1)
+        self.compruebaColumna(columna2)
 
+        self.data_frame =  self.data_frame.merge(tabla, left_on = columna1, right_on = columna2)
 
     def visitColumn_list(self, ctx):
         columnas = list(ctx.getChildren())
         visualizar_columnas = [] #columnas que se quedan en el data_frame
         for i in columnas:
             if i.getText() != ',': visualizar_columnas.append(self.visit(i))
+        
         self.data_frame = self.data_frame[visualizar_columnas]
+        
 
     def visitColumna_nueva(self, ctx):
         [expresion, _, nueva] = list(ctx.getChildren())
@@ -75,9 +96,10 @@ class nuevoVisitor(sequelVisitor):
         return nueva
    
     def visitColumna_existente(self, ctx):
-        [nombre_columna] = list(ctx.getChildren())
-        nombre_columna = self.visit(nombre_columna)
-        return nombre_columna
+        [columna] = list(ctx.getChildren())
+        columna = self.visit(columna)
+        self.compruebaColumna(columna)
+        return columna
     
     def visitParentesis(self, ctx):
         [_, exprs, _] = list(ctx.getChildren())
@@ -115,40 +137,31 @@ class nuevoVisitor(sequelVisitor):
         [num] = list(ctx.getChildren())
         return float(num.getText())
 
-    
-
-   
-
-
-
-
-
     def visitColumns_order(self, ctx): #devuelve una lista segun el orden que se ordenaran las filas del dataset
         l = list(ctx.getChildren()) #deberiamos comprovar que sean columnas existentes
         order = ([],[])
         for i in l: 
             if i.getText() != ',' :
-                columna = self.visit(i)    
+                columna = self.visit(i) 
                 order[0].append(columna[0])
                 order[1].append(columna[1])
         
         self.data_frame = self.data_frame.sort_values(by = order[0], ascending = order[1])
         #st.write(self.data_frame)
         
-    def visitCol_order_asc(self, ctx): #comprovar si existe
+    def visitCol_order_asc(self, ctx): 
         l = list(ctx.getChildren())
         columna = self.visit(l[0])
+        self.compruebaColumna(columna)
         ascendente = True
         return (columna, ascendente)
 
     def visitCol_order_especificado(self, ctx):
         l = list(ctx.getChildren())
         columna = self.visit(l[0])
+        self.compruebaColumna(columna)
         ascendente = l[1].getText().lower() == "asc"
         return (columna, ascendente) #true si es en orden ascendente, false en caso contrario  
-
-
-
 
     def visitClausula_where(self, ctx):
         [condition] = list(ctx.getChildren())
@@ -236,32 +249,38 @@ class nuevoVisitor(sequelVisitor):
 
     def visitColumn(self, ctx): #provar si existe
         [identificador] = list(ctx.getChildren())
-        return self.visit(identificador)
-    
+        return identificador.getText()
 
     def visitTable(self, ctx):
         self.tabla = ctx.getText()
         try:
             return pd.read_csv(f"./data/{self.tabla}.csv")
         except:
-            st.write(f"Error: la tabla '{self.tabla}' es incorrecta") # Fallo al abrir el fichero
-            return -1
-        
-    def visitID(self, ctx):
-        [identificador] = list(ctx.getChildren())
-        return identificador.getText()
+            st.write(f"Error: la tabla '{self.tabla}' es incorrecta!") # Fallo al abrir el fichero
+            #return -1
+
+    def visitPlot(self, ctx):
+        [_, identificador, _] = list(ctx.getChildren())
+        identificador = identificador.getText()
+        #e = self.map[identificador]
+        e = st.session_state[identificador]
+    
+        #plt.savefig('grafico.png')
+        plot = e.plot()
+        st.pyplot()
 
 
 def ejecuta(input_stream): 
+    input_stream = InputStream(input_stream)
     lexer = sequelLexer(input_stream)   
     token_stream = CommonTokenStream(lexer)
     parser = sequelParser(token_stream)
     tree = parser.root()
 
     if parser.getNumberOfSyntaxErrors() == 0:
-        visitor = nuevoVisitor()
+        visitor = myVisitor()
         res = visitor.visit(tree)
-        if (web): st.write(res)
+        if web: st.write(res)
         else: print(res)
         return res
     else:
@@ -272,10 +291,11 @@ def ejecuta(input_stream):
 def main():
     input_stream = ""
     if (web):
-        st.text_input("Consulta:", key="query")
-        input_stream = st.session_state.query
-    else: 
-        input_stream = StdinStream()
+        #st.set_option('deprecation.showPyplotGlobalUse', False)
+        st.header("PandaQ: Pau Martinez")
+        st.subheader("sequel Grammar")
+        input_stream = st.text_area("Introduce tu consulta")
+    
     ejecuta(input_stream)
 
 #descomenta main para funcionamiento normal
@@ -284,7 +304,6 @@ main()
 
 #sentencia para usar en una prueba
 #ejecuta("select * from countries order by region_id, country_name desc")
-
 
 
 

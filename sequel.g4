@@ -1,13 +1,12 @@
 grammar sequel;
 
-//Falten trys excepts
-//Falta streamlit
-//S'ha de poder fer mes gran l'entrada
-
 options {caseInsensitive = true;}
 
-root: (simbol_declare | simbol_consult)+ ;
-//select_statement | 
+root: (select_statement | simbol_declare | simbol_consult | plot)+ ;
+
+select_statement
+    : SELECT column_selection FROM table inner_clause* (WHERE clausula_where)? (ORDER columns_order)?';'?  
+    ;
 
 simbol_declare
     : ID ':=' select_statement ';'
@@ -17,8 +16,8 @@ simbol_consult
     : ID ';'
     ;
 
-select_statement
-    : SELECT column_selection FROM table inner_clause* (WHERE clausula_where)? (ORDER columns_order)? 
+plot
+    : 'plot ' ID ';'
     ;
 
 inner_clause
@@ -49,24 +48,23 @@ column_expr
     ;
 
 columns_order
-    : col_order (',' col_order)*; // perque no salta error si tinc em deixo la coma?
+    : col_order (',' col_order)*;
 
 col_order
     : column ('asc' | 'desc') #col_order_especificado
     | column                  #col_order_asc
     ;
 
-//fer un per sobre de op_logic per poder aplicar el resultat final
-
 clausula_where
     : op_logic
     ;
 
 op_logic
-    : 'not' op_logic            #not 
-    | op_logic 'and' op_logic   #and
-    | op_logic 'or' op_logic    #or  
-    | condition                 #single
+    : column 'in' '(' select_statement ')'   #in
+    | 'not' op_logic                         #not 
+    | op_logic 'and' op_logic                #and
+    | op_logic 'or' op_logic                 #or  
+    | condition                              #single
     ;
 
 condition
@@ -77,7 +75,7 @@ column: ID;
     
 table: ID ;
 
-// Lexer rules
+
 SELECT: 'select' ; 
 FROM: 'from' ;
 AS: 'as' ;
@@ -86,7 +84,7 @@ ON: 'ON';
 WHERE: 'where' ;
 ORDER: 'order by' ;
 ID: [a-z_][a-z0-9_]* ;
-NUM: [+-]?([0-9]*[.])?[0-9]+;      //floats e ints. matches: 43, 43.65, .87
+NUM: [+-]?([0-9]*[.])?[0-9]+;
 WS: [ \t\n\r]+ -> skip ;
 
 

@@ -45,4 +45,7 @@ def test_inner_join():
     res = res[["first_name", "department_name"]]
     assert res.equals(sequel.ejecuta("select first_name, department_name from employees inner join departments on department_id = department_id"))
 
-
+"""def test_tabla_simbolos():
+    expected = pd.read_csv(f"./data/jobs.csv")
+    assert expected.equals(sequel.ejecuta("x := select * from jobs; x;"))"""
+    
