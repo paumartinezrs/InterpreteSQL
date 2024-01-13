@@ -9,20 +9,12 @@ import matplotlib.pyplot as plt
 
 class myVisitor(sequelVisitor):
     def visitRoot(self, ctx):
+        self.data_frame = pd.DataFrame()
         [accion, _] = list(ctx.getChildren())
         return self.visit(accion)
         
     def compruebaColumna(self, columna):
         if columna not in self.data_frame: st.write(f"Error: la columna '{columna}' es incorrecta!") 
-
-    def visitIn(self, ctx):
-        [columna, _, _, select, _] = list(ctx.getChildren())
-        columna = columna.getText()
-        self.compruebaColumna(columna)
-        aux = self.data_frame
-        select = self.visit(select)
-        self.data_frame = aux
-        self.data_frame = self.data_frame[columna].isin(select)
     
     def visitSimbol_declare(self, ctx):
         [identificador, _, consulta] = list(ctx.getChildren())
@@ -37,11 +29,11 @@ class myVisitor(sequelVisitor):
         return st.session_state[identificador]
     
     def visitSelect_statement(self, ctx):
-        self.hijos = list(ctx.getChildren())
-        self.data_frame = self.visit(self.hijos[3]) #visitamos Table
-        for i in range(4, len(self.hijos)):
-            self.visit(self.hijos[i]) 
-        self.visit(self.hijos[1]) #visitamos column selection
+        hijos = list(ctx.getChildren())
+        self.data_frame = self.visit(hijos[3]) #visitamos Table
+        for i in range(4, len(hijos)):
+            self.visit(hijos[i]) 
+        self.visit(hijos[1]) #visitamos column selection
         return self.data_frame
 
     def visitInner_clause(self, ctx): 
@@ -101,9 +93,10 @@ class myVisitor(sequelVisitor):
         else: return primera - segona
 
     def visitId_columna(self, ctx):
-        [col] = list(ctx.getChildren())
-        col = col.getText()
-        return self.data_frame[col]
+        [columna] = list(ctx.getChildren())
+        columna = self.visit(columna)
+        self.compruebaColumna(columna)
+        return self.data_frame[columna]
     
     def visitNum(self, ctx):
         [num] = list(ctx.getChildren())
@@ -134,10 +127,18 @@ class myVisitor(sequelVisitor):
         return (columna, ascendente) #true si es en orden ascendente, false en caso contrario  
 
     def visitClausula_where(self, ctx):
-        [condition] = list(ctx.getChildren())
+        [_, condition] = list(ctx.getChildren())
         condition = self.visit(condition)
         self.data_frame = self.data_frame[condition]
-    
+
+    def visitIn(self, ctx):
+        [columna, _, _, select, _] = list(ctx.getChildren())
+        columna = columna.getText()
+        aux = self.data_frame #guardamos el dataframe actual para que no se sobreescriba
+        select = self.visit(select)
+        self.data_frame = aux
+        return self.data_frame[columna].isin(select[columna])
+        
     def visitNot(self, ctx):
         [_, condition] = list(ctx.getChildren())
         return ~self.visit(condition) 
@@ -250,7 +251,6 @@ def ejecuta(input_stream):
         print(parser.getNumberOfSyntaxErrors(), 'errors de sintaxi.')
         print(tree.toStringTree(recog=parser))
         
-
 def main():
     input_stream = ""
     st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -260,6 +260,3 @@ def main():
     ejecuta(input_stream)
 
 main()
-
-
-
