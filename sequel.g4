@@ -2,22 +2,22 @@ grammar sequel;
 
 options {caseInsensitive = true;}
 
-root: (select_statement | simbol_declare | simbol_consult | plot)+ ;
+root: (select_statement | simbol_declare | simbol_consult | plot)+ ';' ;
 
 select_statement
-    : SELECT column_selection FROM table inner_clause* (WHERE clausula_where)? (ORDER columns_order)?';'?  
+    : SELECT column_selection FROM table inner_clause* (WHERE clausula_where)? (ORDER columns_order)? 
     ;
 
 simbol_declare
-    : ID ':=' select_statement ';'
+    : ID ':=' select_statement
     ;
 
 simbol_consult
-    : ID ';'
+    : ID 
     ;
 
 plot
-    : 'plot ' ID ';'
+    : 'plot ' ID 
     ;
 
 inner_clause
@@ -25,8 +25,8 @@ inner_clause
     ;
 
 column_selection
-    : '*'           #all_columns
-    | column_list   #some_columns
+    : '*'           
+    | column_list   
     ;
 
 column_list
@@ -74,7 +74,6 @@ condition
 column: ID;
     
 table: ID ;
-
 
 SELECT: 'select' ; 
 FROM: 'from' ;

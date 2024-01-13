@@ -1,4 +1,4 @@
-all: compilar run
+all: compilar streamlit
 
 compilar:
 	antlr4 -Dlanguage=Python3 -no-listener -visitor sequel.g4
