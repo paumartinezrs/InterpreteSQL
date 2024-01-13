@@ -60,11 +60,11 @@ clausula_where: WHERE op_logic
     ;
 
 op_logic
-    : column 'in' '(' select_statement ')'   #in
-    | 'not' op_logic                         #not 
-    | op_logic 'and' op_logic                #and
-    | op_logic 'or' op_logic                 #or  
-    | condition                              #single
+    : column 'in' '(' select_statement ')' #in
+    | 'not' op_logic                       #not 
+    | op_logic 'and' op_logic              #and
+    | op_logic 'or' op_logic               #or  
+    | condition                            #single
     ;
 
 condition
@@ -85,5 +85,3 @@ ORDER: 'order by' ;
 ID: [a-z_][a-z0-9_]* ;
 NUM: [+-]?([0-9]*[.])?[0-9]+;
 WS: [ \t\n\r]+ -> skip ;
-
-

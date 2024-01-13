@@ -21,7 +21,7 @@ class myVisitor(sequelVisitor):
         identificador = identificador.getText()
         consulta = self.visit(consulta)
         st.session_state[identificador] = consulta
-        return f"{identificador} declarado!"
+        return consulta
         
     def visitSimbol_consult(self, ctx):
         [identificador] = list(ctx.getChildren())
@@ -220,12 +220,16 @@ class myVisitor(sequelVisitor):
         return identificador.getText()
 
     def visitTable(self, ctx):
-        self.tabla = ctx.getText()
-        try:
-            return pd.read_csv(f"./data/{self.tabla}.csv")
-        except:
-            st.write(f"Error: la tabla '{self.tabla}' es incorrecta!")
-            return "Vuelve a probar con una tabla correcta"
+        [tabla] = list(ctx.getChildren())
+        tabla = tabla.getText()
+        
+        if tabla in st.session_state: return st.session_state[tabla]
+        else:
+            try:    
+                return pd.read_csv(f"./data/{tabla}.csv")
+            except:
+                st.write(f"Error: la tabla '{tabla}' es incorrecta!")
+                return "Vuelve a probar con una tabla correcta"
 
     def visitPlot(self, ctx):
         [_, identificador] = list(ctx.getChildren())
