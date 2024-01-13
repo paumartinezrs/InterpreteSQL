@@ -126,7 +126,7 @@ class myVisitor(sequelVisitor):
         ascendente = l[1].getText().lower() == "asc"
         return (columna, ascendente) #true si es en orden ascendente, false en caso contrario  
 
-    def visitClausula_where(self, ctx):
+    def visitWhere_clause(self, ctx):
         [_, condition] = list(ctx.getChildren())
         condition = self.visit(condition)
         self.data_frame = self.data_frame[condition]
@@ -140,6 +140,7 @@ class myVisitor(sequelVisitor):
         return self.data_frame[columna].isin(select[columna])
         
     def visitNot(self, ctx):
+        st.write("visitando not")
         [_, condition] = list(ctx.getChildren())
         return ~self.visit(condition) 
         

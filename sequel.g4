@@ -5,7 +5,7 @@ options {caseInsensitive = true;}
 root: (select_statement | simbol_declare | simbol_consult | plot)+ ';' ;
 
 select_statement
-    : SELECT column_selection FROM table inner_clause* clausula_where? (ORDER columns_order)? 
+    : SELECT column_selection FROM table inner_clause* where_clause? (ORDER columns_order)? 
     ;
 
 simbol_declare
@@ -55,8 +55,8 @@ col_order
     | column                  #col_order_asc
     ;
 
-
-clausula_where: WHERE op_logic
+where_clause 
+    : WHERE op_logic+
     ;
 
 op_logic
