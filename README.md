@@ -1,13 +1,15 @@
 # PandaQ
-Bienvenidos a PandaQ, un interprete de SQL. La gramatica se ha hecho con ANTLR4 y la interfície gráfica con streamlit. 
+Welcome to PandaQ, an SQL interpreter. The grammar was created with ANTLR4, and the graphical interface is built with Streamlit.
 
-## Compilar
-Para compilar el proyecto: antlr4 -Dlanguage=Python3 -no-listener -visitor sequel.g4 
+## Compile
+To compile the project:  
+`antlr4 -Dlanguage=Python3 -no-listener -visitor sequel.g4`
 
-## Ejecutar
-Para ejecutar el programa: streamlit run sequel.py  
-Una vez iniciado streamlit como localhost se pueden hacer consultas utilizando la sintaxi de SQL.
+## Run
+To run the program:  
+`streamlit run sequel.py`  
+Once Streamlit is running as localhost, SQL queries can be executed using SQL syntax.
 
-## Apreciaciones
-Es importante tener en el directorio del proyecto, una carpeta llamada data con las tablas con las que se trabajara, en formato csv.  
+## Notes
+It is important to have a folder named `data` in the project directory, containing the tables to work with, in CSV format.
 
